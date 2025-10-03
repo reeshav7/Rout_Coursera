@@ -1,7 +1,6 @@
-/* Add Author and Project Details here */
-/* @Author Reeshav Rout 
-   @Date 3 October 2025
-   
+ @Author Reeshav Rout 
+ @Date 3 October 2025
+ 
    This program is the submission 1 of the Week 1 Assignment.
    Here we calculate the minimum, maximum, mean, median of the test array data.
    Then we also sort and print the data of the test array.
@@ -18,6 +17,5 @@
 - `find_mean()` – Computes the mean of the dataset.
 - `find_median()` – Computes the median of the dataset.
 - `sort_array()` – Sorts the dataset in descending order.
-   
-*/
+
 
