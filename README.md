@@ -1,7 +1,7 @@
  @Author Reeshav Rout 
  @Date 3 October 2025
  
-   This program is the submission 1 of the Week 1 Assignment.
+   This program is the submission 1 of the Week 1 Assignment for the Embedded Course in Coursera.
    Here we calculate the minimum, maximum, mean, median of the test array data.
    Then we also sort and print the data of the test array.
    ## Files
