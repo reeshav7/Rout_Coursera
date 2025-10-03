@@ -62,7 +62,7 @@ void main() {
   float median = find_median(test, SIZE);
   
   /* Printing the sorted array */
-  printf("\nSorted Array: \n");
+  printf("\nSorted Array in Descending Order: \n");
   print_array(test, SIZE);
   
   /* Print statistics */

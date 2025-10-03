@@ -9,6 +9,7 @@
  *
  *****************************************************************************/
 /**
+ * Header File which contains all the function declarations.
  * @file stat.h 
  * @brief Header file which contains declaration for the functions used in stat.c
  *
