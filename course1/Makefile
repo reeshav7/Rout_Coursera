@@ -9,94 +9,138 @@
 #
 #******************************************************************************
 
-#------------------------------------------------------------------------------
-# Makefile for C1M2 Assignment
-#
-# Use: make [TARGET] [PLATFORM-OVERRIDES]
-#
-# Build Targets:
-#      build		- Builds and links all source files
-#      compile-all	- Compiles all source files, no linking
-#      clean		- Removes all generated files
-#
-# Platform Overrides:
-#      PLATFORM=HOST	- Builds for native host (gcc)
-#      PLATFORM=MSP432  - Builds for MSP432 using ARM GCC
-#------------------------------------------------------------------------------
+#******************************************************************************
+# Makefile for the final assessment 1.
+#******************************************************************************
+
 include sources.mk
 
 # Platform Overrides
-PLATFORM ?= HOST
+PLATFORM = HOST
+TARGET = course1
+COURSE = COURSE1
+VERBOSE = DISABLE
+GCFLAGS = -Wall -Werror -g -O0 -std=c99 
 
-# Architecture Specific Flags
-LINKER_FILE = msp432p401r.lds
-CPU = cortex-m4
-ARCH = thumb
-SPECS = nosys.specs
-
-# Target name
-TARGET = c1m2
-
-# Compiler and platform flags
-ifeq ($(PLATFORM),HOST)
-	CC = gcc
-	CFLAGS = -Wall -Werror -g -O0 -std=c99
-	CPPFLAGS = -DHOST
-	LDFLAGS = -Wl,-Map=$(TARGET).map
-	SOURCES = $(HOST_SOURCES)
-	INCLUDES = -Iinclude/common
-	SIZE = size
-else ifeq ($(PLATFORM),MSP432)
-	CC = arm-none-eabi-gcc
-	CFLAGS = -Wall -Werror -g -O0 -std=c99 -mcpu=$(CPU) -m$(ARCH) --specs=$(SPECS) -march=armv7e-m -mfloat-abi=hard -mfpu=fpv4-sp-d16
-	CPPFLAGS = -DMSP432
-	LDFLAGS = -Wl,-Map=$(TARGET).map -T $(LINKER_FILE)
-	SOURCES = $(MSP432_SOURCES)
-	INCLUDES = -Iinclude/common -Iinclude/msp432 -Iinclude/CMSIS
-	SIZE = arm-none-eabi-size
+# Architectures Specific Flags
+ifeq ($(PLATFORM),MSP432)
+	LINKER_FILE = ../msp432p401r.lds
+	CPU = cortex-m4
+	ARCH = thumb
+	ARCH_CAT = armv7e-m
+	FPU = fpv4-sp-d16
+	FLOAT_ABI = hard 
+	SPECS = nosys.specs
+else
+	CPU = $(shell cpu)
+	ARCH = $(shell arch)
 endif
 
-# Object, dependency, preprocessed, and assembly files
-OBJS = $(SOURCES:.c=.o)
+# Compiler Flags and Defines
+ifeq ($(PLATFORM),MSP432)
+	CC = arm-none-eabi-gcc
+	LD = arm-none-eabi-ld
+	LDFLAGS = -Wl,-Map=$(TARGET).map -T $(LINKER_FILE) 
+	CFLAGS = -mcpu=$(CPU) -m$(ARCH) -march=$(ARCH_CAT) -mfloat-abi=$(FLOAT_ABI)\
+	 		 -mfpu=$(FPU) --specs=$(SPECS) $(GCFLAGS)
+	CPPFLAGS = -DMSP432
+	OBJDUMP = arm-none-eabi-objdump 
+	SIZE = arm-none-eabi-size
+	PLATFORM = MSP432
+else
+	CC = gcc
+	LD = ld
+	LDFLAGS = -Wl,-Map=$(TARGET).map
+	CFLAGS = $(GCFLAGS)
+	CPPFLAGS = -DHOST
+	OBJDUMP = objdump 
+	SIZE = size
+	PLATFORM = HOST
+endif
+
+ifeq ($(COURSE), COURSE1)
+	CPPFLAGS += -DCOURSE1
+endif
+
+ifeq ($(VERBOSE), ENABLE)
+	CPPFLAGS += -DVERBOSE
+endif
+
+# Variable Definitions
+PREPS = $(SOURCES:.c=.i)
 DEPS = $(SOURCES:.c=.d)
-PREPRO = $(SOURCES:.c=.i)
-ASM = $(SOURCES:.c=.asm)
+ASMS = $(SOURCES:.c=.asm)
+OBJS = $(SOURCES:.c=.o)
 
 #------------------------------------------------------------------------------
-# Build Rules
+# Target: <file>.i
+# Prerequisites: <file>.c 
+# Output: <file>.i
 #------------------------------------------------------------------------------
-
-.PHONY: build compile-all clean all-files
-
-# Default build target: compile and link
-build: $(TARGET).out
-	@$(SIZE) $(TARGET).out
-	@echo "Build complete for $(PLATFORM)"
-
-# Link executable
-$(TARGET).out: $(OBJS)
-	$(CC) $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $(OBJS) $(LDFLAGS) -o $@
-
-# Compile all object files only
-compile-all: $(OBJS)
-	@echo "All files compiled (no linking performed)."
-
-# Generate all files: .o, .i, .asm
-all-files: $(OBJS) $(PREPRO) $(ASM)
-	@echo "All object, preprocessed, and assembly files generated."
-
-# Pattern rules
-%.o: %.c
-	$(CC) -c $< $(CFLAGS) $(CPPFLAGS) $(INCLUDES) -o $@
-
 %.i: %.c
-	$(CC) -E $< $(CPPFLAGS) $(INCLUDES) -o $@
+	$(CC) -E $(CPPFLAGS) $(INCLUDES) $< -o $@ 
+# -E: Stop after the preprocessing stage; do not run the compiler proper. 
+#	  The output is in the form of preprocessed source code, which is sent 
+#	  to the standard output. 
 
-%.asm: %.c
-	$(CC) -S $< $(CFLAGS) $(CPPFLAGS) $(INCLUDES) -o $@
+#------------------------------------------------------------------------------
+# Target: <file>.d
+# Prerequisites: <file>.c 
+# Output: <file>.d
+#------------------------------------------------------------------------------
+%.d: %.c
+	$(CC) -E -M $(CPPFLAGS) $(INCLUDES) $< -o $@ 
 
-# Clean generated files
+#------------------------------------------------------------------------------
+# Target: <file>.asm
+# Prerequisites: <file>.c, <file>.out
+# Output: <file>.asm
+#------------------------------------------------------------------------------
+%.asm : %.c
+	$(CC) -S $(CFLAGS) $(CPPFLAGS) $< -o $@ 
+# -S: Stop after the stage of compilation proper; do not assemble. The output is 
+#	  in the form of an assembler code file for each non-assembler input file specified. 
+%.asm : %.out
+	$(OBJDUMP) -D $< > $@
+
+#------------------------------------------------------------------------------
+# Target: <file>.o
+# Prerequisites: <file>.c 
+# Output: <file>.o
+#------------------------------------------------------------------------------
+%.o : %.c
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $^ -o $@
+
+#------------------------------------------------------------------------------
+# Target: compile-all
+# Prerequisites: All source files.
+# Output: All object files are compiled and the corresponding <files>.o are generated.
+#------------------------------------------------------------------------------
+.PHONY: compile-all
+compile-all: $(OBJS)
+
+#------------------------------------------------------------------------------
+# Target: build
+# Prerequisites: The source files.
+# Output: All files are compiled and generated the final executable <file>.out, 
+#		  as well as a brief report regarding the application size.
+#------------------------------------------------------------------------------
+.PHONY: build
+build: all
+
+.PHONY: all
+all: $(TARGET).out
+$(TARGET).out: $(OBJS) $(DEPS)
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) $(OBJS) -o $@ 
+	$(SIZE) $@
+	$(OBJDUMP) -D $(TARGET).out > $(TARGET).asm
+
+#------------------------------------------------------------------------------
+# Target: clean
+# Prerequisites: None.
+# Output: Remove all compiled objects, preprocessed outputs, assembly outputs,
+#		  executable files and build output files
+#------------------------------------------------------------------------------
+.PHONY: clean
 clean:
-	rm -f $(OBJS) $(DEPS) $(TARGET).out $(TARGET).map $(PREPRO) $(ASM)
-	@echo "Cleanup complete."
-
+	rm -f *.i *.d *.asm *.o *.map *.out

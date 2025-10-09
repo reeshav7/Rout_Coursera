@@ -9,15 +9,26 @@
 #
 #*****************************************************************************
 
-# Add your Source files to this variable
-HOST_SOURCES = src/main.c src/memory.c
+ifeq ($(PLATFORM),MSP432)
+	SOURCES = src/main.c\
+		  src/memory.c\
+		  src/stats.c\
+		  src/course1.c\
+		  src/data.c\
+		  src/startup_msp432p401r_gcc.c\
+		  src/system_msp432p401r.c\
+		  src/interrupts_msp432p401r_gcc.c
 
-# MSP432 sources
-MSP432_SOURCES = src/main.c src/memory.c \
-	src/startup_msp432p401r_gcc.c \
-	src/system_msp432p401r.c \
-	src/interrupts_msp432p401r_gcc.c
 
-# Add your include paths to this variable
-INCLUDES = -Iinclude/common -Iinclude/msp432 -Iinclude/CMSIS
+	INCLUDES = -I../include/CMSIS\
+		   -I../include/common\
+		   -I../include/msp432
+else
+	SOURCES = src/main.c\
+		  src/memory.c\
+		  src/stats.c\
+		  src/course1.c\
+		  src/data.c
 
+	INCLUDES = -I../include/common
+endif
